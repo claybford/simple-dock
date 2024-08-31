@@ -2,6 +2,7 @@
   "DOCK_SIZE": 40,
   "DOCK_SPACING": 10,
   "DOCK_BACKGROUND_COLOR": [32, 32, 32, 255],
+  "BUTTON_BACKGROUND_COLOR": [0, 178, 148, 255],
   "shortcuts": [
     {
       "name": "Firefox",

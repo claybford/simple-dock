@@ -28,23 +28,38 @@ with open(config_path, 'r') as config_file:
 DOCK_SIZE = config['DOCK_SIZE']
 DOCK_SPACING = config['DOCK_SPACING']
 DOCK_BACKGROUND_COLOR = tuple(config['DOCK_BACKGROUND_COLOR'])  # Ensure it's a tuple for QColor usage
+BUTTON_BACKGROUND_COLOR = tuple(config['BUTTON_BACKGROUND_COLOR'])  # Load RGBA for buttons
 
 class DockButton(QPushButton):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("""
-            QPushButton {
+        button_color = (
+            f"rgba({BUTTON_BACKGROUND_COLOR[0]}, {BUTTON_BACKGROUND_COLOR[1]}, "
+            f"{BUTTON_BACKGROUND_COLOR[2]}, {BUTTON_BACKGROUND_COLOR[3] / 255.0})"
+        )
+       
+        self.setStyleSheet(f"""
+            QPushButton {{
                 border: none;
                 background-color: transparent;
                 padding: 0px;
                 margin: 0px;
                 outline: none;  /* This removes the focus rectangle */
-            }
-            QPushButton:focus {
+            }}
+            QPushButton:focus {{
                 outline: none;  /* This ensures no outline when focused */
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {button_color};  /* Background color when hovered */
+            }}
+            QPushButton:pressed {{
+                background-color: {button_color};  /* Background color when pressed */
+            }}
+            QPushButton:!hover {{
+                background-color: transparent;  /* Revert to transparent when mouse leaves */
+            }}
         """)
-    
+   
     def event(self, event):
         if event.type() == event.Enter:
             self.parent().setCursor(Qt.PointingHandCursor)
