@@ -1,0 +1,34 @@
+{
+  "DOCK_SIZE": 40,
+  "DOCK_SPACING": 10,
+  "DOCK_BACKGROUND_COLOR": [32, 32, 32, 255],
+  "shortcuts": [
+    {
+      "name": "Firefox",
+      "path": "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+      "icon_path": "path\\to\\firefox_icon.png"
+    },
+    { "name": "Spacer" },
+    {
+      "name": "Chrome",
+      "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "icon_path": "path\\to\\chrome_icon.png"
+    },
+    {
+      "name": "Explorer",
+      "path": "C:\\Windows\\explorer.exe",
+      "icon_path": "path\\to\\explorer_icon.png"
+    },
+    { "name": "Spacer" },
+    {
+      "name": "CMD",
+      "path": "C:\\Windows\\System32\\cmd.exe",
+      "icon_path": "path\\to\\cmd_icon.png"
+    },
+    {
+      "name": "Notepad",
+      "path": "C:\\Windows\\System32\\notepad.exe",
+      "icon_path": "path\\to\\notepad_icon.png"
+    }
+  ]
+}
