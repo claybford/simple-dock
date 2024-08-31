@@ -12,7 +12,6 @@ import win32api
 import pywintypes
 from PIL import Image
 import io
-import os
 import json
 
 # Get the directory where the script is located
@@ -27,8 +26,8 @@ with open(config_path, 'r') as config_file:
 
 DOCK_SIZE = config['DOCK_SIZE']
 DOCK_SPACING = config['DOCK_SPACING']
-DOCK_BACKGROUND_COLOR = tuple(config['DOCK_BACKGROUND_COLOR'])  # Ensure it's a tuple for QColor usage
-BUTTON_BACKGROUND_COLOR = tuple(config['BUTTON_BACKGROUND_COLOR'])  # Load RGBA for buttons
+DOCK_BACKGROUND_COLOR = tuple(config['DOCK_BACKGROUND_COLOR'])
+BUTTON_BACKGROUND_COLOR = tuple(config['BUTTON_BACKGROUND_COLOR'])
 
 class DockButton(QPushButton):
     def __init__(self, parent=None):
@@ -44,19 +43,19 @@ class DockButton(QPushButton):
                 background-color: transparent;
                 padding: 0px;
                 margin: 0px;
-                outline: none;  /* This removes the focus rectangle */
+                outline: none;
             }}
             QPushButton:focus {{
-                outline: none;  /* This ensures no outline when focused */
+                outline: none;
             }}
             QPushButton:hover {{
-                background-color: {button_color};  /* Background color when hovered */
+                background-color: {button_color};
             }}
             QPushButton:pressed {{
-                background-color: {button_color};  /* Background color when pressed */
+                background-color: {button_color};
             }}
             QPushButton:!hover {{
-                background-color: transparent;  /* Revert to transparent when mouse leaves */
+                background-color: transparent;
             }}
         """)
    
@@ -81,7 +80,6 @@ class Dock(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(DOCK_SPACING)
         
-        # Use shortcuts from the configuration file
         shortcuts = config['shortcuts']
         
         for shortcut in shortcuts:
@@ -98,7 +96,7 @@ class Dock(QWidget):
         screen_geometry = self.screen.geometry()
         self.setGeometry(screen_geometry.left(), screen_geometry.top(), screen_geometry.width(), DOCK_SIZE)
         self.hide()
-
+    
     def create_button(self, name, path, icon_path):
         btn = DockButton(self)
         btn.clicked.connect(lambda _, p=path: self.launch_app(p))
@@ -109,33 +107,36 @@ class Dock(QWidget):
         btn.setFixedSize(DOCK_SIZE, DOCK_SIZE)
         
         return btn
-
+    
     def load_icon(self, icon_path, exe_path, name):
         print(f"Loading icon for {name}...")
         
-        # Try to load the provided PNG
+        # 1. Try to load the PNG provided with icon_path in config
         if icon_path and os.path.exists(icon_path):
             print(f"Attempting to load PNG icon from {icon_path}")
             pixmap = QPixmap(icon_path)
             if not pixmap.isNull():
                 print("Successfully loaded PNG icon")
-                return QIcon(pixmap)
-            else:
-                print("Failed to load PNG icon")
+                return QIcon(self.scale_pixmap(pixmap))
         
-        # If PNG not available, try to extract icon from the executable
+        # 2. If PNG not available or invalid, try to extract icon from the executable
         if exe_path and os.path.exists(exe_path):
             print(f"Attempting to extract icon from executable: {exe_path}")
-            icon = self.extract_icon_from_exe(exe_path)
-            if icon:
+            pixmap = self.extract_icon_from_exe(exe_path)
+            if pixmap:
                 print("Successfully extracted icon from executable")
-                return icon
-            else:
-                print("Failed to extract icon from executable")
+                return QIcon(self.scale_pixmap(pixmap))
         
-        # If both methods fail, create a placeholder
+        # 3. If both methods fail, create a placeholder
         print("Creating placeholder icon")
         return self.create_placeholder_icon(name)
+
+    def scale_pixmap(self, pixmap):
+        if pixmap.width() != DOCK_SIZE or pixmap.height() != DOCK_SIZE:
+            print(f"Scaling icon from {pixmap.width()}x{pixmap.height()} to {DOCK_SIZE}x{DOCK_SIZE}")
+            return pixmap.scaled(DOCK_SIZE, DOCK_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        print(f"Icon size matches DOCK_SIZE ({DOCK_SIZE}x{DOCK_SIZE}). Skipping scaling.")
+        return pixmap
 
     def extract_icon_from_exe(self, exe_path):
         try:
@@ -149,7 +150,6 @@ class Dock(QWidget):
                 print("Successfully extracted large icon")
                 win32gui.DestroyIcon(small[0])
 
-                # Get icon info
                 hdc = win32ui.CreateDCFromHandle(win32gui.GetDC(0))
                 hbmp = win32ui.CreateBitmap()
                 hbmp.CreateCompatibleBitmap(hdc, ico_x, ico_y)
@@ -158,31 +158,18 @@ class Dock(QWidget):
                 hdc.SelectObject(hbmp)
                 hdc.DrawIcon((0, 0), large[0])
 
-                # Convert to PIL Image
                 bmpstr = hbmp.GetBitmapBits(True)
                 pil_img = Image.frombytes('RGBA', (ico_x, ico_y), bmpstr, 'raw', 'BGRA')
 
-                # Convert PIL Image to QPixmap
                 buffer = io.BytesIO()
                 pil_img.save(buffer, format='PNG')
                 pixmap = QPixmap()
                 pixmap.loadFromData(buffer.getvalue())
 
-                print(f"Extracted icon size: {pixmap.width()}x{pixmap.height()}")
-
-                # Scale if necessary
-                if pixmap.width() != DOCK_SIZE or pixmap.height() != DOCK_SIZE:
-                    print(f"Scaling icon from {pixmap.width()}x{pixmap.height()} to {DOCK_SIZE}x{DOCK_SIZE}")
-                    scaled_pixmap = pixmap.scaled(DOCK_SIZE, DOCK_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                else:
-                    print(f"Icon size matches DOCK_SIZE ({DOCK_SIZE}x{DOCK_SIZE}). Skipping scaling.")
-                    scaled_pixmap = pixmap
-
-                # Clean up
                 win32gui.DestroyIcon(large[0])
 
-                print(f"Icon processed to {DOCK_SIZE}x{DOCK_SIZE}")
-                return QIcon(scaled_pixmap)
+                print(f"Extracted icon size: {pixmap.width()}x{pixmap.height()}")
+                return pixmap
             else:
                 print("Failed to extract large icon")
         except pywintypes.error as e:
@@ -212,7 +199,6 @@ class Dock(QWidget):
             print(f"Path does not exist: {path}")
 
     def mousePressEvent(self, event):
-        # This ensures clicks are registered even at the top and bottom pixels
         for child in self.children():
             if isinstance(child, DockButton):
                 if child.geometry().contains(event.pos()):
@@ -224,7 +210,7 @@ class Dock(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(*DOCK_BACKGROUND_COLOR))  # Use the global background color
+        painter.setBrush(QColor(*DOCK_BACKGROUND_COLOR))
         painter.drawRect(self.rect())
         super().paintEvent(event)
 
@@ -238,18 +224,13 @@ class DockManager:
         self.check_mouse_timer.timeout.connect(self.check_mouse_position)
         self.check_mouse_timer.start(50)  # Check every 50 ms
 
-        # Connect signals for screen changes
         self.app.screenAdded.connect(self.screen_added)
         self.app.screenRemoved.connect(self.screen_removed)
         
-        # Set up signal handling for graceful termination
         signal.signal(signal.SIGINT, self.signal_handler)
 
     def create_docks(self):
-        # Clear existing docks to avoid duplications
         self.docks.clear()
-        
-        # Create docks for each screen
         for screen in self.app.screens():
             dock = Dock(screen)
             self.docks.append(dock)
@@ -261,7 +242,6 @@ class DockManager:
     
     def screen_removed(self, screen):
         print(f"Screen removed: {screen.name()}")
-        # Remove docks associated with the removed screen
         self.docks = [dock for dock in self.docks if dock.screen != screen]
 
     def check_mouse_position(self):
