@@ -38,6 +38,10 @@ class DockButton(QPushButton):
                 background-color: transparent;
                 padding: 0px;
                 margin: 0px;
+                outline: none;  /* This removes the focus rectangle */
+            }
+            QPushButton:focus {
+                outline: none;  /* This ensures no outline when focused */
             }
         """)
     
