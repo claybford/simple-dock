@@ -214,37 +214,60 @@ class DockManager:
         self.app = QApplication(sys.argv)
         self.docks = []
         self.create_docks()
+        
         self.check_mouse_timer = QTimer()
         self.check_mouse_timer.timeout.connect(self.check_mouse_position)
-        self.check_mouse_timer.start(50)  # Check every 100 ms
+        self.check_mouse_timer.start(50)  # Check every 50 ms
+
+        # Connect signals for screen changes
+        self.app.screenAdded.connect(self.screen_added)
+        self.app.screenRemoved.connect(self.screen_removed)
         
         # Set up signal handling for graceful termination
         signal.signal(signal.SIGINT, self.signal_handler)
-        
+
     def create_docks(self):
+        # Clear existing docks to avoid duplications
+        self.docks.clear()
+        
+        # Create docks for each screen
         for screen in self.app.screens():
             dock = Dock(screen)
             self.docks.append(dock)
+
+    def screen_added(self, screen):
+        print(f"Screen added: {screen.name()}")
+        dock = Dock(screen)
+        self.docks.append(dock)
     
+    def screen_removed(self, screen):
+        print(f"Screen removed: {screen.name()}")
+        # Remove docks associated with the removed screen
+        self.docks = [dock for dock in self.docks if dock.screen != screen]
+
     def check_mouse_position(self):
         cursor = QCursor.pos()
         for dock in self.docks:
+            if dock.screen is None or dock.screen not in self.app.screens():
+                print(f"Skipping dock on invalid screen: {dock.screen}")
+                continue
+
             screen_geometry = dock.screen.geometry()
             dock_width = screen_geometry.width()
             center_width = dock_width * 0.25
             center_left = screen_geometry.left() + (dock_width - center_width) / 2
             center_right = center_left + center_width
-            
+
             if (cursor.y() == screen_geometry.top() and 
                 center_left <= cursor.x() <= center_right):
                 dock.show()
             elif not dock.geometry().contains(cursor):
                 dock.hide()
-    
+
     def signal_handler(self, sig, frame):
         print("\nCtrl+C pressed. Shutting down gracefully...")
         self.app.quit()
-    
+
     def run(self):
         sys.exit(self.app.exec_())
 
