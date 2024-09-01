@@ -1,8 +1,12 @@
 {
-  "DOCK_SIZE": 40,
-  "DOCK_SPACING": 10,
+  "ICON_SIZE": 40,
   "DOCK_BACKGROUND_COLOR": [32, 32, 32, 255],
-  "BUTTON_BACKGROUND_COLOR": [0, 178, 148, 255],
+  "HOVER_BACKGROUND_COLOR": [0, 255, 191, 255],
+  "ICON_PADDING": 7,
+  "HOVER_TEXT_COLOR": [0, 255, 191, 255],
+  "HOVER_TEXT_FONT": "Arial",
+  "HOVER_TEXT_SIZE": 20,
+  "ACTIVATION_PERCENTAGE": 0.25,
   "shortcuts": [
     {
       "name": "Firefox",
